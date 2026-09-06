@@ -78,8 +78,12 @@ EDITABLE_COLUMNS = {
     "#5": "dmin",
     "#6": "dmax",
 }
-SOUND_ON = "[x]"
-SOUND_OFF = "[ ]"
+# Caselle della colonna Sound: BALLOT BOX WITH CHECK e BALLOT BOX. Sono simboli
+# Unicode e non emoji, quindi restano monocromatici: aggiungere il selettore di
+# variante U+FE0F li trasformerebbe in emoji a colori. Scritti come escape per
+# tenere il sorgente in ASCII.
+SOUND_ON = "\u2611"
+SOUND_OFF = "\u2610"
 STATUS_ON = "On"
 STATUS_OFF = "Off"
 NO_TIME = "-"

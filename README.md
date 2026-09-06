@@ -26,7 +26,7 @@ La lista si riordina da sola: prima le finestre aperte in ordine di chiusura, po
 
 | Colonna | Contenuto |
 |---|---|
-| `Sound` | casella `[x]` / `[ ]`, attiva di default. Un clic la inverte: deselezionata, quel timer non emette allarmi |
+| `Sound` | casella di spunta, attiva di default. Un clic la inverte: deselezionata, quel timer non emette allarmi |
 | `Name`, `Map`, `Category` | dati del timer. La categoria determina il colore della riga |
 | `Time` | ora dell'uccisione |
 | `Spawn` | `Time` piu' la durata minima |
