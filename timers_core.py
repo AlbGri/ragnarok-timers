@@ -34,10 +34,13 @@ log = logging.getLogger(__name__)
 
 DATA_FILENAME = "ragnarok_timers.json"
 LOG_FILENAME = "ragnarok_timers.log"
-DATA_VERSION = 2
+DATA_VERSION = 3
 
-DEFAULT_CATEGORIES = ("Mostro", "Quest")
+DEFAULT_CATEGORIES = ("MVP", "Quest")
 HISTORY_KEYS = ("nome", "mappa", "categoria")
+
+# Rinomine di categoria applicate ai file salvati prima della versione 3.
+CATEGORY_RENAMES = {"Mostro": "MVP"}
 
 MAX_ARCHIVE = 200
 
@@ -421,6 +424,7 @@ class Timer:
         start: Istante di partenza, tipicamente l'uccisione.
         dmin: Durata minima prima dell'apertura della finestra.
         dmax: Durata massima, oltre la quale la finestra e' chiusa.
+        sound: False se questo timer non deve emettere allarmi sonori.
         acked: True se l'utente ha preso atto dell'allarme.
         alerts_sent: Quanti allarmi sono gia' stati emessi.
         next_alert: Istante del prossimo allarme, None se non programmato.
@@ -432,6 +436,7 @@ class Timer:
     start: datetime
     dmin: timedelta
     dmax: timedelta
+    sound: bool = True
     acked: bool = False
     alerts_sent: int = 0
     next_alert: datetime | None = None
@@ -508,10 +513,11 @@ class Timer:
             max_alerts: Numero massimo di allarmi per questo timer.
 
         Returns:
-            True se la finestra e' aperta o chiusa, l'utente non ha ancora
-            preso atto e il numero massimo di allarmi non e' stato raggiunto.
+            True se il suono e' attivo per questo timer, la finestra e' aperta
+            o chiusa, l'utente non ha ancora preso atto e il numero massimo di
+            allarmi non e' stato raggiunto.
         """
-        if self.acked or self.state(now) is TimerState.PENDING:
+        if not self.sound or self.acked or self.state(now) is TimerState.PENDING:
             return False
         if self.alerts_sent >= max_alerts:
             return False
@@ -543,6 +549,7 @@ class Timer:
             "start": self.start.isoformat(),
             "duration_min_minutes": self.dmin.total_seconds() / 60,
             "duration_max_minutes": self.dmax.total_seconds() / 60,
+            "sound": self.sound,
             "acked": self.acked,
             "alerts_sent": self.alerts_sent,
         }
@@ -586,6 +593,7 @@ class Timer:
             start=start,
             dmin=timedelta(minutes=dmin),
             dmax=timedelta(minutes=dmax),
+            sound=bool(payload.get("sound", True)),
             acked=bool(payload.get("acked", payload.get("notified", False))),
             alerts_sent=int(payload.get("alerts_sent", 0)),
         )
@@ -858,6 +866,28 @@ class TimerStore:
             log.warning("File dati con struttura inattesa: %s", candidate)
         return None, False
 
+    def _migrate_categories(self) -> None:
+        """Applica le rinomine di categoria ai dati appena caricati.
+
+        Viene eseguita solo sui file salvati prima della versione corrente, in
+        modo che una categoria riscritta a mano dall'utente non venga cambiata.
+        """
+        for timer in self.timers.values():
+            timer.categoria = CATEGORY_RENAMES.get(timer.categoria, timer.categoria)
+        for preset in self.presets.values():
+            preset.categoria = CATEGORY_RENAMES.get(preset.categoria, preset.categoria)
+        for entry in self.archive:
+            if entry.get("categoria") in CATEGORY_RENAMES:
+                entry["categoria"] = CATEGORY_RENAMES[entry["categoria"]]
+
+        rinominate = [CATEGORY_RENAMES.get(v, v) for v in self.history["categoria"]]
+        unica: list[str] = []
+        for value in rinominate:
+            if not any(value.lower() == existing.lower() for existing in unica):
+                unica.append(value)
+        self.history["categoria"] = sorted(unica, key=str.lower)
+        log.info("Categorie migrate: %s", CATEGORY_RENAMES)
+
     def load(self, now: datetime | None = None) -> bool:
         """Carica timer, storico, preset, archivio e impostazioni.
 
@@ -909,6 +939,9 @@ class TimerStore:
                 timer.acked = True
             self.add(timer)
             self.presets.setdefault(timer.name.strip().lower(), Preset.from_timer(timer))
+
+        if data.get("version", 1) < DATA_VERSION:
+            self._migrate_categories()
 
         log.info("Caricati %d timer da %s", len(self.timers), self.path)
         return from_backup

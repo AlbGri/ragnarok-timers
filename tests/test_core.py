@@ -8,6 +8,7 @@ from datetime import timedelta
 import pytest
 
 from timers_core import (
+    DATA_VERSION,
     MAX_ARCHIVE,
     Preset,
     Settings,
@@ -41,7 +42,7 @@ def make_timer(name: str = "Atroce", minutes_ago: float = 0.0, dmin: float = 190
     return Timer(
         name=name,
         mappa="ve_fild01",
-        categoria="Mostro",
+        categoria="MVP",
         start=now_local() - timedelta(minutes=minutes_ago),
         dmin=timedelta(minutes=dmin),
         dmax=timedelta(minutes=dmax),
@@ -206,6 +207,19 @@ def test_acknowledge_ferma_gli_allarmi():
     assert not timer.alert_due(now, max_alerts=6)
 
 
+def test_suono_disattivato_non_produce_allarmi():
+    """La casella Sound tolta zittisce il singolo timer, non tutta la lista."""
+    now = now_local()
+    timer = make_timer(minutes_ago=30, dmin=10, dmax=90)
+    assert timer.alert_due(now, max_alerts=6)
+    timer.sound = False
+    assert not timer.alert_due(now, max_alerts=6)
+
+
+def test_suono_attivo_per_impostazione_predefinita():
+    assert make_timer().sound is True
+
+
 def test_beep_in_cache_e_volume_zero_muto():
     assert make_beep(60) is make_beep(60)
     # Oltre l'intestazione wav di 44 byte tutti i campioni sono a zero.
@@ -218,8 +232,20 @@ def test_beep_in_cache_e_volume_zero_muto():
 def test_round_trip_del_timer():
     timer = make_timer(minutes_ago=10, dmin=190, dmax=370)
     timer.alerts_sent = 3
+    timer.sound = False
     ricostruito = Timer.from_dict(timer.to_dict())
     assert ricostruito == timer
+
+
+def test_timer_senza_campo_sound_ha_il_suono_attivo():
+    """I file scritti prima della colonna Sound non devono restare muti."""
+    payload = {
+        "name": "Atroce",
+        "start": now_local().isoformat(),
+        "duration_min_minutes": 190,
+        "duration_max_minutes": 370,
+    }
+    assert Timer.from_dict(payload).sound is True
 
 
 def test_migrazione_dal_formato_versione_1():
@@ -335,8 +361,9 @@ def test_salvataggio_atomico_senza_temporanei_residui(store):
     assert not store.tmp_path.exists()
 
     dati = json.loads(store.path.read_text(encoding="utf-8"))
-    assert dati["version"] == 2
+    assert dati["version"] == DATA_VERSION
     assert "duration_max_minutes" in dati["timers"][0]
+    assert "sound" in dati["timers"][0]
 
 
 def test_backup_creato_al_secondo_salvataggio(store):
@@ -392,6 +419,45 @@ def test_finestre_gia_aperte_all_avvio_sono_silenziate(store):
     per_nome = {t.name: t for t in riletto.timers.values()}
     assert per_nome["Aperto"].acked is True
     assert per_nome["Atteso"].acked is False
+
+
+def test_categoria_mostro_migrata_a_mvp(store):
+    """I file salvati prima della versione 3 usavano Mostro come categoria."""
+    vecchio = {
+        "version": 2,
+        "timers": [
+            {"name": "Atroce", "mappa": "ve_fild01", "categoria": "Mostro",
+             "start": now_local().isoformat(), "duration_min_minutes": 190,
+             "duration_max_minutes": 370},
+        ],
+        "history": {"nome": ["Atroce"], "mappa": ["ve_fild01"],
+                    "categoria": ["Mostro", "Quest"]},
+        "presets": {"atroce": {"nome": "Atroce", "mappa": "ve_fild01",
+                               "categoria": "Mostro", "min": 190, "max": 370}},
+        "archive": [{"name": "Gryphon", "categoria": "Mostro",
+                     "start": now_local().isoformat(), "duration_min_minutes": 60,
+                     "duration_max_minutes": 60}],
+    }
+    store.path.write_text(json.dumps(vecchio), encoding="utf-8")
+
+    store.load()
+    assert [t.categoria for t in store.timers.values()] == ["MVP"]
+    assert store.history["categoria"] == ["MVP", "Quest"]
+    assert store.presets["atroce"].categoria == "MVP"
+    assert store.archive[0]["categoria"] == "MVP"
+
+
+def test_categoria_non_migrata_sui_file_gia_aggiornati(store):
+    """Su un file della versione corrente Mostro e' una scelta dell'utente."""
+    store.add(make_timer("Atroce"))
+    store.timers["1"].categoria = "Mostro"
+    store.remember("categoria", "Mostro")
+    store.save()
+
+    riletto = TimerStore(path=store.path)
+    riletto.load()
+    assert riletto.timers["1"].categoria == "Mostro"
+    assert "Mostro" in riletto.history["categoria"]
 
 
 def test_preset_appresi_dai_timer_del_file(store):

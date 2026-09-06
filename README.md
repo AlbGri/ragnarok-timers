@@ -4,19 +4,33 @@ Timer per le finestre di respawn di MVP e quest di Ragnarok Online.
 
 Applicazione desktop in tkinter, senza dipendenze esterne: registri l'ora dell'uccisione e la finestra di respawn del mostro, e la riga cambia colore quando la finestra si apre. Un allarme sonoro ripetuto e il lampeggio nella barra delle applicazioni avvisano anche se stai facendo altro.
 
+L'interfaccia e' in inglese; commenti, docstring e documentazione sono in italiano.
+
 ## Finestre di respawn
 
-Ogni timer ha una durata minima e una massima. Sono tre stati:
+Ogni timer ha una durata minima e una massima, che diventano due orari: `Spawn` e `Max. Spawn`. Uccidendo un MVP alle 13:12 con respawn dichiarato di 180-190 minuti si inserisce `13:12`, `180` e `190`, e la tabella mostra `Spawn 16:12` e `Max. Spawn 16:22`.
 
-| Stato | Colore | Contatore |
-|---|---|---|
-| In attesa | colore della categoria | quanto manca all'apertura |
-| APERTO | giallo | quanto manca alla chiusura |
-| Chiuso | rosso | da quanto e' chiusa |
+| Fase | `Status` | Colore riga | `Left` |
+|---|---|---|---|
+| Prima di `Spawn` | `On` | colore della categoria | quanto manca a `Spawn` |
+| Fra `Spawn` e `Max. Spawn` | `Off` | giallo | quanto manca a `Max. Spawn` |
+| Dopo `Max. Spawn` | `Off` | rosso | da quanto e' passato |
 
-Se lasci vuoto il campo `Max` il timer diventa un countdown classico a durata fissa: la colonna `Chiude` mostra `-` e lo stato finale e' `Scaduto`.
+Se lasci vuoto il campo `Max` il timer diventa un countdown classico a durata fissa: la colonna `Max. Spawn` mostra `-` e la riga passa direttamente da `On` a `Off` diventando rossa.
 
-La lista si riordina da sola: prima le finestre aperte in ordine di chiusura, poi quelle in attesa in ordine di apertura, infine quelle chiuse.
+La lista si riordina da sola: prima le finestre aperte in ordine di chiusura, poi quelle ancora in attesa in ordine di apertura, infine quelle passate.
+
+## Colonne
+
+| Colonna | Contenuto |
+|---|---|
+| `Sound` | casella `[x]` / `[ ]`, attiva di default. Un clic la inverte: deselezionata, quel timer non emette allarmi |
+| `Name`, `Map`, `Category` | dati del timer. La categoria determina il colore della riga |
+| `Time` | ora dell'uccisione |
+| `Spawn` | `Time` piu' la durata minima |
+| `Max. Spawn` | `Time` piu' la durata massima, `-` per i timer a durata fissa |
+| `Left` | contatore verso la soglia corrente, negativo quando e' passata |
+| `Status` | `On` finche' non e' respawnato, `Off` dopo |
 
 ## Setup
 
@@ -30,11 +44,11 @@ L'applicazione usa solo la libreria standard: per eseguirla non serve installare
 
 ## Utilizzo
 
-Compila il form e premi `Aggiungi` o `Invio`:
+Compila il form e premi `Add` o `Invio`:
 
-- **Nome, Mappa, Categoria**: campi con storico e completamento automatico. La categoria determina il colore della riga.
-- **Min / Max**: durata della finestra in minuti. Accetta `190`, `90,5`, `1h30`, `3:10`.
-- **Orario**: ora dell'uccisione in formato `HH:MM`. Se lo lasci vuoto parte da adesso. Un orario che risulterebbe oltre 12 ore nel futuro viene letto come "ieri", cosi' un'uccisione delle 23:50 registrata dopo mezzanotte non parte fra un giorno.
+- **Name, Map, Category**: campi con storico e completamento automatico. La categoria determina il colore della riga e per impostazione predefinita e' `MVP`.
+- **Time**: ora dell'uccisione in formato `HH:MM`. Se lo lasci vuoto parte da adesso. Un orario che risulterebbe oltre 12 ore nel futuro viene letto come "ieri", cosi' un'uccisione delle 23:50 registrata dopo mezzanotte non parte fra un giorno.
+- **Min / Max**: durata della finestra in minuti. Accetta `190`, `90,5`, `1h30`, `3:10`. Lasciando `Max` vuoto il timer e' a durata fissa.
 
 Scrivendo un nome gia' usato, mappa, categoria e durate vengono compilate con i valori dell'ultima volta. I preset si imparano dai timer che crei: non c'e' una tabella di respawn precaricata, perche' i tempi variano da server a server.
 
@@ -42,13 +56,15 @@ Scrivendo un nome gia' usato, mappa, categoria e durate vengono compilate con i 
 
 | Comando | Effetto |
 |---|---|
+| Clic sulla casella `Sound` | attiva o disattiva l'allarme di quel timer |
 | Doppio clic su una cella | modifica nome, mappa, categoria, orario o durate |
-| `+1 (duplica)` / `Ctrl+D` | ricrea il timer selezionato a partire da adesso |
+| `+1 (duplicate)` / `Ctrl+D` | ricrea il timer selezionato a partire da adesso |
 | `Refresh` / `Ctrl+R` | fa ripartire il timer selezionato da adesso |
-| `Rimuovi` / `Canc` | elimina i timer selezionati, con conferma |
-| `Annulla` / `Ctrl+Z` | ripristina l'ultimo gruppo rimosso o archiviato |
-| `Silenzia` | ferma gli allarmi in corso (basta anche selezionare la riga) |
-| `Pulisci scaduti` | archivia i timer con la finestra chiusa da almeno un'ora |
+| `Remove` / `Canc` | elimina i timer selezionati, con conferma |
+| `Undo` / `Ctrl+Z` | ripristina l'ultimo gruppo rimosso o archiviato |
+| `Clear expired` | archivia i timer con la finestra chiusa da almeno un'ora |
+
+Selezionare una riga vale come "l'ho visto" e ferma la ripetizione dell'allarme senza spegnerlo per le volte successive; togliere la spunta a `Sound` lo disattiva stabilmente per quel timer.
 
 I timer chiusi da oltre 24 ore vengono archiviati automaticamente nel file dati, in modo che la lista non cresca all'infinito.
 

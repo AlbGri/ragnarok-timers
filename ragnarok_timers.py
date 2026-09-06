@@ -55,26 +55,32 @@ ARCHIVE_CHECK_SECONDS = 300
 PURGE_MIN_AGE = timedelta(hours=1)
 MAX_UNDO = 20
 
-COLUMNS = ("mappa", "categoria", "orario", "apre", "chiude", "stato", "remaining")
+COLUMNS = ("name", "map", "category", "time", "spawn", "maxspawn", "left", "status")
 HEADINGS = {
-    "#0": ("Nome", 130, "w"),
-    "mappa": ("Mappa", 100, "center"),
-    "categoria": ("Categoria", 85, "center"),
-    "orario": ("Orario", 60, "center"),
-    "apre": ("Apre", 60, "center"),
-    "chiude": ("Chiude", 60, "center"),
-    "stato": ("Stato", 85, "center"),
-    "remaining": ("Rimanente", 90, "center"),
+    "#0": ("Sound", 55, "center"),
+    "name": ("Name", 120, "w"),
+    "map": ("Map", 95, "center"),
+    "category": ("Category", 80, "center"),
+    "time": ("Time", 55, "center"),
+    "spawn": ("Spawn", 60, "center"),
+    "maxspawn": ("Max. Spawn", 80, "center"),
+    "left": ("Left", 85, "center"),
+    "status": ("Status", 55, "center"),
 }
 # Colonna del Treeview -> campo modificabile con doppio clic.
 EDITABLE_COLUMNS = {
-    "#0": "name",
-    "#1": "mappa",
-    "#2": "categoria",
-    "#3": "orario",
-    "#4": "dmin",
-    "#5": "dmax",
+    "#1": "name",
+    "#2": "mappa",
+    "#3": "categoria",
+    "#4": "orario",
+    "#5": "dmin",
+    "#6": "dmax",
 }
+SOUND_ON = "[x]"
+SOUND_OFF = "[ ]"
+STATUS_ON = "On"
+STATUS_OFF = "Off"
+NO_TIME = "-"
 
 
 class AutocompleteCombobox(ttk.Combobox):
@@ -174,10 +180,10 @@ class TimerApp:
         top.pack(fill="x", padx=8, pady=(6, 0))
         self.topmost_var = tk.BooleanVar(value=False)
         self._dark_checkbutton(
-            top, "Sempre in primo piano", self.topmost_var, self._toggle_topmost
+            top, "Always on top", self.topmost_var, self._toggle_topmost
         ).pack(side="left")
         tk.Label(
-            top, text="Doppio clic su una cella per modificarla", bg=BG, fg=FG_MUTED
+            top, text="Double-click a cell to edit it", bg=BG, fg=FG_MUTED
         ).pack(side="right")
 
         self._build_form()
@@ -233,15 +239,15 @@ class TimerApp:
         form = tk.Frame(self.root, bg=BG)
         form.pack(fill="x", padx=8, pady=6)
 
-        self.name_entry = self._form_combo(form, "Nome", 0, width=15)
-        self.mappa_entry = self._form_combo(form, "Mappa", 1, width=14)
-        self.category_entry = self._form_combo(form, "Categoria", 2, width=11)
-        self.min_entry = self._form_entry(form, "Min (min)", 3, width=7, default="60")
-        self.max_entry = self._form_entry(form, "Max (min)", 4, width=7)
-        self.start_entry = self._form_entry(form, "Orario (HH:MM)", 5, width=9)
+        self.name_entry = self._form_combo(form, "Name", 0, width=15)
+        self.mappa_entry = self._form_combo(form, "Map", 1, width=14)
+        self.category_entry = self._form_combo(form, "Category", 2, width=11)
+        self.start_entry = self._form_entry(form, "Time (HH:MM)", 3, width=9)
+        self.min_entry = self._form_entry(form, "Min", 4, width=7, default="60")
+        self.max_entry = self._form_entry(form, "Max", 5, width=7)
 
         ttk.Button(
-            form, text="Aggiungi", style="Dark.TButton", command=self.add_timer
+            form, text="Add", style="Dark.TButton", command=self.add_timer
         ).grid(row=1, column=6, padx=(8, 2))
 
         self.name_entry.bind("<<ComboboxSelected>>", self._apply_preset)
@@ -261,7 +267,7 @@ class TimerApp:
         self.tree = ttk.Treeview(frame, columns=COLUMNS, show="tree headings", height=12)
         for column, (text, width, anchor) in HEADINGS.items():
             self.tree.heading(column, text=text)
-            self.tree.column(column, width=width, anchor=anchor, stretch=(column == "#0"))
+            self.tree.column(column, width=width, anchor=anchor, stretch=(column == "name"))
         self.tree.grid(row=0, column=0, sticky="nsew")
 
         scrollbar = ttk.Scrollbar(
@@ -272,6 +278,7 @@ class TimerApp:
 
         self.tree.tag_configure(TAG_CLOSED, foreground=COLOR_CLOSED)
         self.tree.tag_configure(TAG_OPEN, foreground=COLOR_OPEN)
+        self.tree.bind("<Button-1>", self._on_click)
         self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
         self.tree.bind("<Delete>", lambda _e: self.remove_selected())
@@ -280,12 +287,11 @@ class TimerApp:
         frame = tk.Frame(self.root, bg=BG)
         frame.pack(fill="x", padx=8, pady=4)
         for text, command in (
-            ("+1 (duplica)", self.duplicate_selected),
+            ("+1 (duplicate)", self.duplicate_selected),
             ("Refresh", self.refresh_selected),
-            ("Rimuovi", self.remove_selected),
-            ("Silenzia", self.silence_alerts),
-            ("Pulisci scaduti", self.purge_expired),
-            ("Annulla (Ctrl+Z)", self.undo_last),
+            ("Remove", self.remove_selected),
+            ("Clear expired", self.purge_expired),
+            ("Undo (Ctrl+Z)", self.undo_last),
         ):
             ttk.Button(frame, text=text, style="Dark.TButton", command=command).pack(
                 side="left", padx=2
@@ -294,7 +300,7 @@ class TimerApp:
     def _build_footer(self) -> None:
         frame = tk.Frame(self.root, bg=BG)
         frame.pack(fill="x", padx=8, pady=(4, 0))
-        tk.Label(frame, text="Volume beep", bg=BG, fg=FG).pack(side="left")
+        tk.Label(frame, text="Beep volume", bg=BG, fg=FG).pack(side="left")
 
         self.volume_var = tk.IntVar(value=self.store.settings.volume)
         scale = tk.Scale(
@@ -305,11 +311,11 @@ class TimerApp:
         scale.bind("<ButtonRelease-1>", lambda _e: self._save())
 
         self.repeat_var = tk.BooleanVar(value=self.store.settings.repeat_alert)
-        self._dark_checkbutton(frame, "Ripeti allarme", self.repeat_var, self._save).pack(
+        self._dark_checkbutton(frame, "Repeat alert", self.repeat_var, self._save).pack(
             side="left", padx=(8, 0)
         )
         ttk.Button(
-            frame, text="Prova", style="Dark.TButton",
+            frame, text="Test", style="Dark.TButton",
             command=lambda: play_beep(self.volume_var.get()),
         ).pack(side="left", padx=4)
 
@@ -408,7 +414,7 @@ class TimerApp:
         dmin = parse_minutes(self.min_entry.get())
         if dmin is None:
             self.set_status(
-                "Durata minima non valida: usa un numero di minuti (es. 190, 1h30, 3:10).",
+                "Invalid Min: enter a number of minutes (e.g. 190, 1h30, 3:10).",
                 error=True,
             )
             self.min_entry.focus_set()
@@ -420,8 +426,7 @@ class TimerApp:
             parsed = parse_minutes(max_text)
             if parsed is None:
                 self.set_status(
-                    "Durata massima non valida: lasciala vuota per un timer fisso.",
-                    error=True,
+                    "Invalid Max: leave it empty for a fixed timer.", error=True
                 )
                 self.max_entry.focus_set()
                 return
@@ -432,7 +437,7 @@ class TimerApp:
             parsed_time = parse_hhmm(start_text)
             if parsed_time is None:
                 self.set_status(
-                    "Orario non valido: formato richiesto HH:MM (es. 23:50).", error=True
+                    "Invalid Time: expected format HH:MM (e.g. 23:50).", error=True
                 )
                 self.start_entry.focus_set()
                 return
@@ -467,7 +472,7 @@ class TimerApp:
             if timer.is_fixed
             else f"{format_minutes(dmin)}-{format_minutes(dmax)} min"
         )
-        self.set_status(f"Aggiunto {timer.name} ({window}) da {start.strftime('%H:%M')}.")
+        self.set_status(f"Added {timer.name} ({window}) from {start.strftime('%H:%M')}.")
         self.start_entry.delete(0, "end")
 
     def duplicate_selected(self) -> None:
@@ -480,11 +485,11 @@ class TimerApp:
             source = self.store.timers[timer_id]
             copy = Timer(
                 name=source.name, mappa=source.mappa, categoria=source.categoria,
-                start=now, dmin=source.dmin, dmax=source.dmax,
+                start=now, dmin=source.dmin, dmax=source.dmax, sound=source.sound,
             )
             self._add_row(self.store.add(copy))
         self._save()
-        self.set_status(f"Duplicati {len(selection)} timer da adesso.")
+        self.set_status(f"Duplicated {len(selection)} timers from now.")
 
     def refresh_selected(self) -> None:
         """Fa ripartire i timer selezionati da adesso."""
@@ -497,7 +502,7 @@ class TimerApp:
             self._render_row(timer_id, now)
         self.current_order = []
         self._save()
-        self.set_status(f"Riavviati {len(selection)} timer.")
+        self.set_status(f"Restarted {len(selection)} timers.")
 
     def remove_selected(self) -> None:
         """Elimina i timer selezionati, previa conferma."""
@@ -507,53 +512,46 @@ class TimerApp:
         names = [self.store.timers[tid].name for tid in selection]
         preview = ", ".join(names[:5]) + ("..." if len(names) > 5 else "")
         if not messagebox.askyesno(
-            "Rimuovi timer",
-            f"Rimuovere {len(selection)} timer?\n\n{preview}\n\nPuoi annullare con Ctrl+Z.",
+            "Remove timers",
+            f"Remove {len(selection)} timers?\n\n{preview}\n\nYou can undo with Ctrl+Z.",
             parent=self.root,
         ):
             return
         self._drop_rows(selection, self.store.remove(selection))
-        self.set_status(f"Rimossi {len(selection)} timer. Ctrl+Z per annullare.")
+        self.set_status(f"Removed {len(selection)} timers. Ctrl+Z to undo.")
 
     def purge_expired(self) -> None:
         """Archivia i timer con la finestra chiusa da almeno un'ora."""
         now = now_local()
         stale = self.store.stale_ids(now, PURGE_MIN_AGE)
         if not stale:
-            self.set_status("Nessun timer scaduto da pulire.")
+            self.set_status("No expired timers to clear.")
             return
         if not messagebox.askyesno(
-            "Pulisci scaduti",
-            f"Archiviare {len(stale)} timer con la finestra gia' chiusa?\n\n"
-            "Puoi annullare con Ctrl+Z.",
+            "Clear expired",
+            f"Archive {len(stale)} timers whose window is already closed?\n\n"
+            "You can undo with Ctrl+Z.",
             parent=self.root,
         ):
             return
         self._drop_rows(stale, self.store.archive_ids(stale, now))
-        self.set_status(f"Archiviati {len(stale)} timer scaduti. Ctrl+Z per annullare.")
-
-    def silence_alerts(self) -> None:
-        """Prende atto di tutti gli allarmi in corso."""
-        silenced = sum(timer.acknowledge() for timer in self.store.timers.values())
-        if silenced:
-            self._save()
-        self.set_status(f"Allarmi silenziati ({silenced}).")
+        self.set_status(f"Archived {len(stale)} expired timers. Ctrl+Z to undo.")
 
     def undo_last(self) -> None:
         """Ripristina l'ultimo gruppo di timer rimossi o archiviati."""
         if not self.undo_stack:
-            self.set_status("Niente da annullare.")
+            self.set_status("Nothing to undo.")
             return
         payloads = self.undo_stack.pop()
         for timer_id in self.store.restore(payloads):
             self._add_row(timer_id)
         self._save()
-        self.set_status(f"Ripristinati {len(payloads)} timer.")
+        self.set_status(f"Restored {len(payloads)} timers.")
 
     def _selection(self) -> list[str]:
         selection = [tid for tid in self.tree.selection() if tid in self.store.timers]
         if not selection:
-            self.set_status("Seleziona prima un timer.", error=True)
+            self.set_status("Select a timer first.", error=True)
         return selection
 
     def _drop_rows(self, timer_ids: list[str], payloads: list[dict]) -> None:
@@ -586,33 +584,33 @@ class TimerApp:
         self._render_row(timer_id, now_local())
         self.current_order = []
 
-    def _row_values(self, timer: Timer, now) -> tuple[tuple[str, ...], TimerState]:
+    def _row_values(self, timer: Timer, now) -> tuple[str, tuple[str, ...], TimerState]:
+        """Testo della colonna Sound, valori delle altre colonne e stato."""
         state = timer.state(now)
         if state is TimerState.CLOSED:
-            label = "Scaduto" if timer.is_fixed else "Chiuso"
-            remaining = "-" + format_duration(-timer.countdown(now))
+            left = "-" + format_duration(-timer.countdown(now))
         else:
-            label = "In attesa" if state is TimerState.PENDING else "APERTO"
-            remaining = format_duration(timer.countdown(now))
+            left = format_duration(timer.countdown(now))
 
         values = (
+            timer.name,
             timer.mappa,
             timer.categoria,
             timer.start.strftime("%H:%M"),
             timer.open_at.strftime("%H:%M"),
-            "-" if timer.is_fixed else timer.close_at.strftime("%H:%M"),
-            label,
-            remaining,
+            NO_TIME if timer.is_fixed else timer.close_at.strftime("%H:%M"),
+            left,
+            STATUS_ON if state is TimerState.PENDING else STATUS_OFF,
         )
-        return values, state
+        return (SOUND_ON if timer.sound else SOUND_OFF), values, state
 
     def _render_row(self, timer_id: str, now) -> TimerState:
         """Aggiorna una riga solo se il contenuto o il colore sono cambiati."""
         timer = self.store.timers[timer_id]
-        values, state = self._row_values(timer, now)
-        if self.row_cells.get(timer_id) != values:
-            self.row_cells[timer_id] = values
-            self.tree.item(timer_id, text=timer.name, values=values)
+        sound, values, state = self._row_values(timer, now)
+        if self.row_cells.get(timer_id) != (sound,) + values:
+            self.row_cells[timer_id] = (sound,) + values
+            self.tree.item(timer_id, text=sound, values=values)
 
         if state is TimerState.OPEN:
             tag = TAG_OPEN
@@ -626,6 +624,21 @@ class TimerApp:
         return state
 
     # ------------------------------------------------------- modifica riga ---
+
+    def _on_click(self, event: tk.Event) -> None:
+        """Attiva o disattiva il suono cliccando la casella nella colonna Sound."""
+        if self.tree.identify_region(event.x, event.y) != "tree":
+            return
+        row_id = self.tree.identify_row(event.y)
+        if row_id not in self.store.timers:
+            return
+        timer = self.store.timers[row_id]
+        timer.sound = not timer.sound
+        if not timer.sound:
+            # Togliere la spunta zittisce anche un allarme gia' in corso.
+            timer.acknowledge()
+        self._render_row(row_id, now_local())
+        self._save()
 
     def _on_double_click(self, event: tk.Event) -> None:
         if self.tree.identify_region(event.x, event.y) not in ("cell", "tree"):
@@ -779,7 +792,7 @@ class TimerApp:
         elif field == "orario":
             parsed = parse_hhmm(text)
             if parsed is None:
-                self.set_status("Orario non valido: usa HH:MM.", error=True)
+                self.set_status("Invalid Time: use HH:MM.", error=True)
                 return
             timer.reschedule(local_at(*parsed))
         else:
@@ -789,7 +802,7 @@ class TimerApp:
                 parsed_minutes = parse_minutes(text)
                 if parsed_minutes is None:
                     self.set_status(
-                        "Durata non valida: usa minuti (es. 190, 1h30, 3:10).", error=True
+                        "Invalid duration: use minutes (e.g. 190, 1h30, 3:10).", error=True
                     )
                     return
                 minutes = parsed_minutes
@@ -812,7 +825,7 @@ class TimerApp:
             # La riprogrammazione avviene comunque: se saltasse, tutti i
             # countdown si fermerebbero in silenzio.
             log.exception("Errore durante l'aggiornamento dei timer")
-            self.set_status("Errore nell'aggiornamento, vedi il log.", error=True)
+            self.set_status("Update error, see the log.", error=True)
         finally:
             self._after_id = self.root.after(TICK_MS, self._update_loop)
 
@@ -873,7 +886,7 @@ class TimerApp:
             self.row_cells.pop(timer_id, None)
             self.row_tags.pop(timer_id, None)
         self.current_order = []
-        self.set_status(f"Archiviati {len(stale)} timer scaduti da oltre {hours} ore.")
+        self.set_status(f"Archived {len(stale)} timers expired more than {hours} hours ago.")
         return len(stale)
 
     # --------------------------------------------------------- persistenza ---
@@ -890,7 +903,7 @@ class TimerApp:
     def _save(self) -> None:
         self._collect_settings()
         if not self.store.save():
-            self.set_status("Salvataggio fallito, vedi il log.", error=True)
+            self.set_status("Save failed, see the log.", error=True)
 
     def _load(self) -> None:
         now = now_local()
@@ -901,7 +914,7 @@ class TimerApp:
         self._apply_settings()
         self._auto_archive(now)
         if from_backup:
-            self.set_status("File dati illeggibile: ripristinato dal backup.", error=True)
+            self.set_status("Data file unreadable: restored from backup.", error=True)
 
     def _apply_settings(self) -> None:
         settings = self.store.settings
