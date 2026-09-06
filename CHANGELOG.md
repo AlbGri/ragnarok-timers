@@ -38,3 +38,4 @@ Prima versione pubblica, nata da uno script personale riorganizzato in progetto.
 
 - Nessuna dipendenza di runtime oltre alla libreria standard
 - Logica separata dall'interfaccia in `timers_core.py`, coperta da test pytest
+- Eseguibile Windows autonomo, senza Python installato sulla macchina

@@ -96,7 +96,9 @@ pytest
 pyinstaller RagnarokTimers.spec --noconfirm
 ```
 
-L'eseguibile viene creato in `dist/RagnarokTimers/`. Al primo avvio genera il file dati nella sua stessa cartella, quindi la cartella si puo' spostare o copiare mantenendo i timer.
+L'eseguibile viene creato in `dist/RagnarokTimers/`. Il file dati viene scritto nella cartella dell'exe al primo salvataggio, cioe' appena aggiungi un timer o chiudi la finestra: la cartella si puo' quindi spostare o copiare mantenendo i timer.
+
+La build va lanciata da un environment conda con tkinter. Lo spec copia dalla cartella `Library/bin` dell'environment le DLL native che PyInstaller non rileva da solo (Tcl/Tk e libffi); se non le trova si ferma con un errore invece di produrre un eseguibile che non parte.
 
 Distribuzione:
 
