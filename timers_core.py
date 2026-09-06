@@ -656,7 +656,6 @@ class Settings:
     repeat_alert: bool = True
     alert_repeat_seconds: int = 15
     alert_max_count: int = 6
-    archive_hours: int = 24
 
     def to_dict(self) -> dict:
         """Serializza le impostazioni per il file dati."""
@@ -667,7 +666,6 @@ class Settings:
             "repeat_alert": self.repeat_alert,
             "alert_repeat_seconds": self.alert_repeat_seconds,
             "alert_max_count": self.alert_max_count,
-            "archive_hours": self.archive_hours,
         }
 
     @classmethod

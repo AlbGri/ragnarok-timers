@@ -17,7 +17,7 @@ Prima versione pubblica, nata da uno script personale riorganizzato in progetto.
 - Preset appresi dai timer creati: riscrivendo un nome gia' usato si compilano mappa, categoria e durate
 - Storico con completamento automatico su nome, mappa e categoria
 - Modifica inline con doppio clic su nome, mappa, categoria, orario e durate
-- Archiviazione automatica dei timer chiusi da oltre 24 ore, con pulizia manuale su richiesta
+- Archiviazione solo su richiesta con Clear expired: nessun timer sparisce dalla lista da solo
 - Annullamento delle rimozioni e delle archiviazioni con Ctrl+Z
 - Scorciatoie da tastiera: Invio, Canc, Ctrl+D, Ctrl+R, Ctrl+Z
 - Volume, opzione "sempre in primo piano" e dimensioni della finestra ricordate fra le sessioni

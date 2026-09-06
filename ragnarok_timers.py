@@ -51,7 +51,6 @@ TAG_CLOSED = "state::closed"
 
 TICK_MS = 500
 STATUS_CLEAR_MS = 6000
-ARCHIVE_CHECK_SECONDS = 300
 PURGE_MIN_AGE = timedelta(hours=1)
 MAX_UNDO = 20
 
@@ -159,7 +158,6 @@ class TimerApp:
         self.current_order: list[str] = []
         self._after_id: str | None = None
         self._status_token = 0
-        self._last_archive_check = now_local()
 
         root.title(f"Timer Ragnarok {__version__}")
         root.geometry("820x560")
@@ -831,7 +829,7 @@ class TimerApp:
             self._after_id = self.root.after(TICK_MS, self._update_loop)
 
     def tick(self) -> None:
-        """Aggiorna righe, allarmi, ordinamento e archiviazione automatica."""
+        """Aggiorna righe, allarmi e ordinamento."""
         now = now_local()
         dirty = False
         alerting = False
@@ -855,11 +853,6 @@ class TimerApp:
             play_beep(self.volume_var.get())
             flash_taskbar(self.root.winfo_id())
 
-        if (now - self._last_archive_check).total_seconds() > ARCHIVE_CHECK_SECONDS:
-            self._last_archive_check = now
-            if self._auto_archive(now):
-                dirty = True
-
         order = sorted(
             self.store.timers, key=lambda tid: (self.store.timers[tid].sort_key(now), tid)
         )
@@ -872,23 +865,6 @@ class TimerApp:
 
         if dirty:
             self._save()
-
-    def _auto_archive(self, now) -> int:
-        hours = self.store.settings.archive_hours
-        if not hours:
-            return 0
-        stale = self.store.stale_ids(now, timedelta(hours=hours))
-        if not stale:
-            return 0
-        self._close_editor_on(stale)
-        self.store.archive_ids(stale, now)
-        for timer_id in stale:
-            self.tree.delete(timer_id)
-            self.row_cells.pop(timer_id, None)
-            self.row_tags.pop(timer_id, None)
-        self.current_order = []
-        self.set_status(f"Archived {len(stale)} timers expired more than {hours} hours ago.")
-        return len(stale)
 
     # --------------------------------------------------------- persistenza ---
 
@@ -907,13 +883,11 @@ class TimerApp:
             self.set_status("Save failed, see the log.", error=True)
 
     def _load(self) -> None:
-        now = now_local()
-        from_backup = self.store.load(now)
+        from_backup = self.store.load()
         for timer_id in self.store.timers:
             self._add_row(timer_id)
         self._refresh_history_widgets()
         self._apply_settings()
-        self._auto_archive(now)
         if from_backup:
             self.set_status("Data file unreadable: restored from backup.", error=True)
 

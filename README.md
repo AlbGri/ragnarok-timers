@@ -68,7 +68,7 @@ Scrivendo un nome gia' usato, mappa, categoria e durate vengono compilate con i 
 
 Selezionare una riga vale come "l'ho visto" e ferma la ripetizione dell'allarme senza spegnerlo per le volte successive; togliere la spunta a `Sound` lo disattiva stabilmente per quel timer.
 
-I timer chiusi da oltre 24 ore vengono archiviati automaticamente nel file dati, in modo che la lista non cresca all'infinito.
+Niente sparisce dalla lista da solo: i timer restano finche' non li togli tu. `Clear expired` sposta nella sezione `archive` del file dati quelli con la finestra chiusa da almeno un'ora, e anche quello si annulla con `Ctrl+Z`.
 
 ## Dati e impostazioni
 
