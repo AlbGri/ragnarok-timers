@@ -1,6 +1,6 @@
 # Ragnarok Timers
 
-Timer per le finestre di respawn di MVP e quest di Ragnarok Online.
+Timer per le finestre di respawn di MvP e quest di Ragnarok Online.
 
 Applicazione desktop in tkinter, senza dipendenze esterne: registri l'ora dell'uccisione e la finestra di respawn del mostro, e la riga cambia colore quando la finestra si apre. Un allarme sonoro ripetuto e il lampeggio nella barra delle applicazioni avvisano anche se stai facendo altro.
 
@@ -8,17 +8,15 @@ L'interfaccia e' in inglese; commenti, docstring e documentazione sono in italia
 
 ## Finestre di respawn
 
-Ogni timer ha una durata minima e una massima, che diventano due orari: `Spawn` e `Max. Spawn`. Uccidendo un MVP alle 13:12 con respawn dichiarato di 180-190 minuti si inserisce `13:12`, `180` e `190`, e la tabella mostra `Spawn 16:12` e `Max. Spawn 16:22`.
+Ogni timer ha una durata minima e una massima, che diventano due orari: `Spawn` e `Max. Spawn`. Uccidendo un MvP alle 13:12 con respawn dichiarato di 180-190 minuti si inserisce `13:12`, `180` e `190`, e la tabella mostra `Spawn 16:12` e `Max. Spawn 16:22`.
 
-| Fase | `Status` | Colore riga | `Left` |
-|---|---|---|---|
-| Prima di `Spawn` | `On` | colore della categoria | quanto manca a `Spawn` |
-| Fra `Spawn` e `Max. Spawn` | `On` | giallo | quanto manca a `Max. Spawn` |
-| Dopo `Max. Spawn` | `Off` | rosso | da quanto e' passato, poi `-` |
+| Fase | Colore riga | `Left` |
+|---|---|---|
+| Prima di `Spawn` | colore della categoria | quanto manca a `Spawn` |
+| Fra `Spawn` e `Max. Spawn` | giallo, puo' gia' essere apparso | quanto manca a `Max. Spawn` |
+| Dopo `Max. Spawn` | rosso | da quanto e' passato, poi `-` |
 
-`Status` resta `On` finche' c'e' ancora da aspettarselo, cioe' fino a `Max. Spawn`; il giallo distingue il momento in cui puo' gia' essere apparso.
-
-Se lasci vuoto il campo `Max` il timer diventa un countdown classico a durata fissa: la colonna `Max. Spawn` mostra `-` e la riga passa da `On` a `Off` diventando rossa.
+Se lasci vuoto il campo `Max` il timer diventa un countdown classico a durata fissa: la colonna `Max. Spawn` mostra `-` e la riga diventa rossa alla scadenza.
 
 La lista si riordina da sola: prima le finestre aperte in ordine di chiusura, poi quelle ancora in attesa in ordine di apertura, infine quelle passate.
 
@@ -32,7 +30,6 @@ La lista si riordina da sola: prima le finestre aperte in ordine di chiusura, po
 | `Spawn` | `Time` piu' la durata minima |
 | `Max. Spawn` | `Time` piu' la durata massima, `-` per i timer a durata fissa |
 | `Left` | contatore verso la soglia corrente, negativo quando e' passata, `-` oltre le 24 ore dalla scadenza |
-| `Status` | `On` fino a `Max. Spawn`, `Off` dopo |
 
 ## Setup
 
@@ -48,7 +45,7 @@ L'applicazione usa solo la libreria standard: per eseguirla non serve installare
 
 Compila il form e premi `Add` o `Invio`:
 
-- **Name, Map, Category**: campi con storico e completamento automatico. La categoria determina il colore della riga e per impostazione predefinita e' `MVP`.
+- **Name, Map, Category**: campi con storico e completamento automatico. La categoria determina il colore della riga e per impostazione predefinita e' `MvP`.
 - **Time**: ora dell'uccisione in formato `HH:MM`. Se lo lasci vuoto parte da adesso. Un orario che risulterebbe oltre 12 ore nel futuro viene letto come "ieri", cosi' un'uccisione delle 23:50 registrata dopo mezzanotte non parte fra un giorno.
 - **Min / Max**: durata della finestra in minuti. Accetta `190`, `90,5`, `1h30`, `3:10`. Lasciando `Max` vuoto il timer e' a durata fissa.
 

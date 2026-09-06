@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Interfaccia tkinter del Timer Ragnarok.
 
-Sorveglia le finestre di respawn di MVP e quest: la riga resta neutra finche'
+Sorveglia le finestre di respawn di MvP e quest: la riga resta neutra finche'
 la finestra non si apre, diventa gialla mentre e' aperta e rossa quando si e'
 chiusa. Tutta la logica non grafica sta in timers_core.
 """
@@ -57,17 +57,16 @@ PURGE_MIN_AGE = timedelta(hours=1)
 LEFT_HIDE_AFTER = timedelta(hours=24)
 MAX_UNDO = 20
 
-COLUMNS = ("name", "map", "category", "time", "spawn", "maxspawn", "left", "status")
+COLUMNS = ("name", "map", "category", "time", "spawn", "maxspawn", "left")
 HEADINGS = {
     "#0": ("Sound", 55, "center"),
-    "name": ("Name", 120, "w"),
-    "map": ("Map", 95, "center"),
-    "category": ("Category", 80, "center"),
-    "time": ("Time", 55, "center"),
-    "spawn": ("Spawn", 60, "center"),
-    "maxspawn": ("Max. Spawn", 80, "center"),
-    "left": ("Left", 85, "center"),
-    "status": ("Status", 55, "center"),
+    "name": ("Name", 130, "w"),
+    "map": ("Map", 100, "center"),
+    "category": ("Category", 85, "center"),
+    "time": ("Time", 60, "center"),
+    "spawn": ("Spawn", 65, "center"),
+    "maxspawn": ("Max. Spawn", 85, "center"),
+    "left": ("Left", 90, "center"),
 }
 # Colonna del Treeview -> campo modificabile con doppio clic.
 EDITABLE_COLUMNS = {
@@ -84,8 +83,6 @@ EDITABLE_COLUMNS = {
 # tenere il sorgente in ASCII.
 SOUND_ON = "\u2611"
 SOUND_OFF = "\u2610"
-STATUS_ON = "On"
-STATUS_OFF = "Off"
 NO_TIME = "-"
 
 
@@ -610,8 +607,6 @@ class TimerApp:
             timer.open_at.strftime("%H:%M"),
             NO_TIME if timer.is_fixed else timer.close_at.strftime("%H:%M"),
             left,
-            # On finche' c'e' ancora da aspettarselo, cioe' fino a Max. Spawn.
-            STATUS_OFF if state is TimerState.CLOSED else STATUS_ON,
         )
         return (SOUND_ON if timer.sound else SOUND_OFF), values, state
 

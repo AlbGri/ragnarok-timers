@@ -34,13 +34,13 @@ log = logging.getLogger(__name__)
 
 DATA_FILENAME = "ragnarok_timers.json"
 LOG_FILENAME = "ragnarok_timers.log"
-DATA_VERSION = 3
+DATA_VERSION = 4
 
-DEFAULT_CATEGORIES = ("MVP", "Quest")
+DEFAULT_CATEGORIES = ("MvP", "Quest")
 HISTORY_KEYS = ("nome", "mappa", "categoria")
 
-# Rinomine di categoria applicate ai file salvati prima della versione 3.
-CATEGORY_RENAMES = {"Mostro": "MVP"}
+# Rinomine di categoria applicate ai file salvati con un formato precedente.
+CATEGORY_RENAMES = {"Mostro": "MvP", "MVP": "MvP"}
 
 MAX_ARCHIVE = 200
 

@@ -8,10 +8,10 @@ Prima versione pubblica, nata da uno script personale riorganizzato in progetto.
 
 - Interfaccia in inglese; commenti, docstring e documentazione restano in italiano
 - Finestre di respawn con durata minima e massima, mostrate come orari nelle colonne Spawn e Max. Spawn
-- Colonna Status con On fino a Max. Spawn e Off dopo, affiancata dal colore della riga: giallo dentro la finestra, rosso quando e' passata
+- Stato comunicato dal colore della riga e dal contatore Left: colore della categoria in attesa, giallo dentro la finestra, rosso quando e' passata
 - Timer a durata fissa lasciando vuoto il campo Max
 - Colonna Sound con casella attiva di default: un clic disattiva l'allarme del singolo timer
-- MVP come categoria predefinita, con migrazione automatica della vecchia categoria Mostro
+- MvP come categoria predefinita, con migrazione automatica delle categorie precedenti
 - Ordinamento automatico: prima le finestre aperte, poi quelle in attesa, infine quelle chiuse
 - Allarme sonoro ripetuto con lampeggio della barra delle applicazioni; selezionare la riga ferma la ripetizione
 - Preset appresi dai timer creati: riscrivendo un nome gia' usato si compilano mappa, categoria e durate

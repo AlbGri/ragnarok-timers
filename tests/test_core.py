@@ -42,7 +42,7 @@ def make_timer(name: str = "Atroce", minutes_ago: float = 0.0, dmin: float = 190
     return Timer(
         name=name,
         mappa="ve_fild01",
-        categoria="MVP",
+        categoria="MvP",
         start=now_local() - timedelta(minutes=minutes_ago),
         dmin=timedelta(minutes=dmin),
         dmax=timedelta(minutes=dmax),
@@ -441,10 +441,10 @@ def test_categoria_mostro_migrata_a_mvp(store):
     store.path.write_text(json.dumps(vecchio), encoding="utf-8")
 
     store.load()
-    assert [t.categoria for t in store.timers.values()] == ["MVP"]
-    assert store.history["categoria"] == ["MVP", "Quest"]
-    assert store.presets["atroce"].categoria == "MVP"
-    assert store.archive[0]["categoria"] == "MVP"
+    assert [t.categoria for t in store.timers.values()] == ["MvP"]
+    assert store.history["categoria"] == ["MvP", "Quest"]
+    assert store.presets["atroce"].categoria == "MvP"
+    assert store.archive[0]["categoria"] == "MvP"
 
 
 def test_categoria_non_migrata_sui_file_gia_aggiornati(store):
