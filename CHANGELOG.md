@@ -25,6 +25,7 @@ Prima versione pubblica, nata da uno script personale riorganizzato in progetto.
 - Un orario che risulterebbe oltre 12 ore nel futuro viene interpretato come "ieri", per le uccisioni a cavallo della mezzanotte
 - Date con offset esplicito: i countdown restano corretti attraverso il cambio dell'ora legale
 - Nessun allarme arretrato all'avvio per le finestre aperte mentre l'applicazione era chiusa
+- La posizione salvata viene ignorata se cade fuori dal desktop disponibile, per non riaprire la finestra invisibile dopo aver scollegato un monitor
 - Input non validi segnalati nella barra di stato invece di essere ignorati
 - Lettura del formato dati precedente, con migrazione automatica
 

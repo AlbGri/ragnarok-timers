@@ -48,7 +48,11 @@ FUTURE_TOLERANCE = timedelta(hours=12)
 TIME_RE = re.compile(r"^([0-1]?[0-9]|2[0-3])[:.]([0-5][0-9])$")
 DURATION_HM_RE = re.compile(r"(\d+)\s*[h:]\s*(\d{1,2})")
 DURATION_H_RE = re.compile(r"(\d+(?:\.\d+)?)\s*h")
-GEOMETRY_RE = re.compile(r"^\d+x\d+(\+-?\d+\+-?\d+)?$")
+GEOMETRY_RE = re.compile(r"^(\d+)x(\d+)(?:\+(-?\d+)\+(-?\d+))?$")
+
+# Quanti pixel della finestra devono restare dentro lo schermo perche' la barra
+# del titolo sia ancora afferrabile con il mouse.
+MIN_VISIBLE_PIXELS = 120
 
 
 # --------------------------------------------------------------- percorsi ---
@@ -190,6 +194,82 @@ def format_duration(total_seconds: float) -> str:
 def format_minutes(minutes: float) -> str:
     """Formatta un numero di minuti senza decimali inutili."""
     return str(int(minutes)) if float(minutes).is_integer() else f"{minutes:g}"
+
+
+# -------------------------------------------------------- geometria finestra -
+
+
+def parse_geometry(geometry: str) -> tuple[int, int, int | None, int | None] | None:
+    """Scompone una stringa di geometria Tk.
+
+    Args:
+        geometry: Testo nel formato "820x560" oppure "820x560+100+50".
+
+    Returns:
+        La tupla (larghezza, altezza, x, y), con x e y a None quando la
+        stringa non contiene la posizione, oppure None se non e' valida.
+    """
+    match = GEOMETRY_RE.match(geometry.strip())
+    if not match:
+        return None
+    width, height, x, y = match.groups()
+    return (
+        int(width),
+        int(height),
+        int(x) if x is not None else None,
+        int(y) if y is not None else None,
+    )
+
+
+def geometry_is_reachable(geometry: str, bounds: tuple[int, int, int, int],
+                          margin: int = MIN_VISIBLE_PIXELS) -> bool:
+    """Verifica che una finestra salvata ricada in un'area raggiungibile.
+
+    Serve a non riaprire l'applicazione fuori dallo schermo dopo che un monitor
+    e' stato scollegato o la risoluzione e' cambiata: la finestra risulterebbe
+    avviata ma invisibile.
+
+    Args:
+        geometry: Geometria salvata.
+        bounds: Rettangolo (x, y, larghezza, altezza) del desktop disponibile.
+        margin: Pixel della finestra che devono restare visibili.
+
+    Returns:
+        True se la geometria e' valida e la finestra e' raggiungibile. Una
+        geometria senza posizione e' sempre accettabile.
+    """
+    parsed = parse_geometry(geometry)
+    if parsed is None:
+        return False
+    width, _height, x, y = parsed
+    if x is None or y is None:
+        return True
+
+    left, top, screen_width, screen_height = bounds
+    right, bottom = left + screen_width, top + screen_height
+    return (
+        x + width > left + margin
+        and x < right - margin
+        and top <= y < bottom - margin
+    )
+
+
+def virtual_screen_bounds() -> tuple[int, int, int, int] | None:
+    """Rettangolo del desktop virtuale, monitor multipli inclusi.
+
+    Returns:
+        La tupla (x, y, larghezza, altezza) su Windows, None altrove: sugli
+        altri sistemi il chiamante ricava i valori da Tk.
+    """
+    if not sys.platform.startswith("win"):
+        return None
+    try:
+        metrics = ctypes.windll.user32.GetSystemMetrics
+        # SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SM_CXVIRTUALSCREEN, SM_CYVIRTUALSCREEN
+        return (metrics(76), metrics(77), metrics(78), metrics(79))
+    except OSError:
+        log.exception("Lettura delle dimensioni del desktop fallita")
+        return None
 
 
 # ----------------------------------------------------------------- audio ----

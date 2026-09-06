@@ -16,12 +16,17 @@ from timers_core import (
     TimerStore,
     format_duration,
     format_minutes,
+    geometry_is_reachable,
     local_at,
     make_beep,
     now_local,
+    parse_geometry,
     parse_hhmm,
     parse_minutes,
 )
+
+# Schermo singolo 1920x1080 usato dai test sulla geometria.
+SCHERMO = (0, 0, 1920, 1080)
 
 
 @pytest.fixture
@@ -273,6 +278,45 @@ def test_settings_ignora_chiavi_sconosciute_e_geometria_non_valida():
 
 def test_settings_accetta_geometria_valida():
     assert Settings.from_dict({"geometry": "820x560+100+50"}).geometry == "820x560+100+50"
+
+
+# ------------------------------------------------------ geometria finestra ---
+
+
+def test_parse_geometry():
+    assert parse_geometry("820x560+100+50") == (820, 560, 100, 50)
+    assert parse_geometry("820x560") == (820, 560, None, None)
+    assert parse_geometry("820x560+-1900+50") == (820, 560, -1900, 50)
+    assert parse_geometry("non-valida") is None
+
+
+def test_geometria_dentro_lo_schermo_e_accettata():
+    assert geometry_is_reachable("820x560+100+50", SCHERMO)
+    assert geometry_is_reachable("820x560+0+0", SCHERMO)
+
+
+def test_geometria_senza_posizione_e_sempre_accettata():
+    assert geometry_is_reachable("820x560", SCHERMO)
+
+
+def test_geometria_fuori_schermo_e_rifiutata():
+    """Con un monitor scollegato l'app si riaprirebbe invisibile."""
+    assert not geometry_is_reachable("820x560+3000+3000", SCHERMO)
+    assert not geometry_is_reachable("820x560+1900+50", SCHERMO)  # quasi tutta a destra
+    assert not geometry_is_reachable("820x560+-800+50", SCHERMO)  # quasi tutta a sinistra
+    assert not geometry_is_reachable("820x560+100+1050", SCHERMO)  # sotto il bordo
+    assert not geometry_is_reachable("820x560+100+-30", SCHERMO)  # titolo sopra il bordo
+
+
+def test_geometria_valida_su_monitor_secondario_a_sinistra():
+    schermo_esteso = (-1920, 0, 3840, 1080)
+    assert geometry_is_reachable("820x560+-1800+100", schermo_esteso)
+    assert not geometry_is_reachable("820x560+-1800+100", SCHERMO)
+
+
+def test_geometria_non_valida_e_rifiutata():
+    assert not geometry_is_reachable("", SCHERMO)
+    assert not geometry_is_reachable("non-valida", SCHERMO)
 
 
 def test_preset_da_timer():

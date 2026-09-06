@@ -22,12 +22,14 @@ from timers_core import (
     flash_taskbar,
     format_duration,
     format_minutes,
+    geometry_is_reachable,
     local_at,
     now_local,
     parse_hhmm,
     parse_minutes,
     play_beep,
     setup_logging,
+    virtual_screen_bounds,
 )
 
 log = logging.getLogger(__name__)
@@ -907,11 +909,30 @@ class TimerApp:
         self.repeat_var.set(settings.repeat_alert)
         self.topmost_var.set(settings.topmost)
         self.root.attributes("-topmost", settings.topmost)
-        if settings.geometry:
-            try:
-                self.root.geometry(settings.geometry)
-            except tk.TclError:
-                log.warning("Geometria non applicabile: %s", settings.geometry)
+        if not settings.geometry:
+            return
+        if not geometry_is_reachable(settings.geometry, self._screen_bounds()):
+            # Monitor scollegato o risoluzione cambiata: riaprire la finestra
+            # dove era salvata la renderebbe invisibile.
+            log.warning("Geometria salvata fuori schermo, ignorata: %s", settings.geometry)
+            settings.geometry = ""
+            return
+        try:
+            self.root.geometry(settings.geometry)
+        except tk.TclError:
+            log.warning("Geometria non applicabile: %s", settings.geometry)
+
+    def _screen_bounds(self) -> tuple[int, int, int, int]:
+        """Rettangolo del desktop disponibile, monitor multipli inclusi."""
+        bounds = virtual_screen_bounds()
+        if bounds is not None:
+            return bounds
+        return (
+            self.root.winfo_vrootx(),
+            self.root.winfo_vrooty(),
+            self.root.winfo_vrootwidth(),
+            self.root.winfo_vrootheight(),
+        )
 
     def close(self) -> None:
         """Ferma il countdown, salva e chiude la finestra."""
