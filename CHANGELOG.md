@@ -18,6 +18,7 @@ Prima versione pubblica, nata da uno script personale riorganizzato in progetto.
 - Storico con completamento automatico su nome, mappa e categoria
 - Modifica inline con doppio clic su nome, mappa, categoria, orario e durate
 - Archiviazione solo su richiesta con Clear expired: nessun timer sparisce dalla lista da solo
+- Left smette di contare oltre le 24 ore dalla scadenza e mostra un trattino
 - Annullamento delle rimozioni e delle archiviazioni con Ctrl+Z
 - Scorciatoie da tastiera: Invio, Canc, Ctrl+D, Ctrl+R, Ctrl+Z
 - Volume, opzione "sempre in primo piano" e dimensioni della finestra ricordate fra le sessioni

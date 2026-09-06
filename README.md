@@ -14,7 +14,7 @@ Ogni timer ha una durata minima e una massima, che diventano due orari: `Spawn` 
 |---|---|---|---|
 | Prima di `Spawn` | `On` | colore della categoria | quanto manca a `Spawn` |
 | Fra `Spawn` e `Max. Spawn` | `On` | giallo | quanto manca a `Max. Spawn` |
-| Dopo `Max. Spawn` | `Off` | rosso | da quanto e' passato |
+| Dopo `Max. Spawn` | `Off` | rosso | da quanto e' passato, poi `-` |
 
 `Status` resta `On` finche' c'e' ancora da aspettarselo, cioe' fino a `Max. Spawn`; il giallo distingue il momento in cui puo' gia' essere apparso.
 
@@ -31,7 +31,7 @@ La lista si riordina da sola: prima le finestre aperte in ordine di chiusura, po
 | `Time` | ora dell'uccisione |
 | `Spawn` | `Time` piu' la durata minima |
 | `Max. Spawn` | `Time` piu' la durata massima, `-` per i timer a durata fissa |
-| `Left` | contatore verso la soglia corrente, negativo quando e' passata |
+| `Left` | contatore verso la soglia corrente, negativo quando e' passata, `-` oltre le 24 ore dalla scadenza |
 | `Status` | `On` fino a `Max. Spawn`, `Off` dopo |
 
 ## Setup

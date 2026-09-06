@@ -52,6 +52,9 @@ TAG_CLOSED = "state::closed"
 TICK_MS = 500
 STATUS_CLEAR_MS = 6000
 PURGE_MIN_AGE = timedelta(hours=1)
+# Oltre questa anzianita' il contatore di Left smette di essere informativo:
+# "-111:25:21" non dice niente di piu' di "e' passato da un pezzo".
+LEFT_HIDE_AFTER = timedelta(hours=24)
 MAX_UNDO = 20
 
 COLUMNS = ("name", "map", "category", "time", "spawn", "maxspawn", "left", "status")
@@ -586,7 +589,12 @@ class TimerApp:
         """Testo della colonna Sound, valori delle altre colonne e stato."""
         state = timer.state(now)
         if state is TimerState.CLOSED:
-            left = "-" + format_duration(-timer.countdown(now))
+            elapsed = -timer.countdown(now)
+            left = (
+                NO_TIME
+                if elapsed > LEFT_HIDE_AFTER.total_seconds()
+                else "-" + format_duration(elapsed)
+            )
         else:
             left = format_duration(timer.countdown(now))
 
