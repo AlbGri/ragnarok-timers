@@ -600,7 +600,8 @@ class TimerApp:
             timer.open_at.strftime("%H:%M"),
             NO_TIME if timer.is_fixed else timer.close_at.strftime("%H:%M"),
             left,
-            STATUS_ON if state is TimerState.PENDING else STATUS_OFF,
+            # On finche' c'e' ancora da aspettarselo, cioe' fino a Max. Spawn.
+            STATUS_OFF if state is TimerState.CLOSED else STATUS_ON,
         )
         return (SOUND_ON if timer.sound else SOUND_OFF), values, state
 

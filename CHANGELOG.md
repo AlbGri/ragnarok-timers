@@ -8,7 +8,7 @@ Prima versione pubblica, nata da uno script personale riorganizzato in progetto.
 
 - Interfaccia in inglese; commenti, docstring e documentazione restano in italiano
 - Finestre di respawn con durata minima e massima, mostrate come orari nelle colonne Spawn e Max. Spawn
-- Colonna Status con On finche' non e' respawnato e Off dopo, affiancata dal colore della riga: giallo dentro la finestra, rosso dopo
+- Colonna Status con On fino a Max. Spawn e Off dopo, affiancata dal colore della riga: giallo dentro la finestra, rosso quando e' passata
 - Timer a durata fissa lasciando vuoto il campo Max
 - Colonna Sound con casella attiva di default: un clic disattiva l'allarme del singolo timer
 - MVP come categoria predefinita, con migrazione automatica della vecchia categoria Mostro

@@ -13,10 +13,12 @@ Ogni timer ha una durata minima e una massima, che diventano due orari: `Spawn` 
 | Fase | `Status` | Colore riga | `Left` |
 |---|---|---|---|
 | Prima di `Spawn` | `On` | colore della categoria | quanto manca a `Spawn` |
-| Fra `Spawn` e `Max. Spawn` | `Off` | giallo | quanto manca a `Max. Spawn` |
+| Fra `Spawn` e `Max. Spawn` | `On` | giallo | quanto manca a `Max. Spawn` |
 | Dopo `Max. Spawn` | `Off` | rosso | da quanto e' passato |
 
-Se lasci vuoto il campo `Max` il timer diventa un countdown classico a durata fissa: la colonna `Max. Spawn` mostra `-` e la riga passa direttamente da `On` a `Off` diventando rossa.
+`Status` resta `On` finche' c'e' ancora da aspettarselo, cioe' fino a `Max. Spawn`; il giallo distingue il momento in cui puo' gia' essere apparso.
+
+Se lasci vuoto il campo `Max` il timer diventa un countdown classico a durata fissa: la colonna `Max. Spawn` mostra `-` e la riga passa da `On` a `Off` diventando rossa.
 
 La lista si riordina da sola: prima le finestre aperte in ordine di chiusura, poi quelle ancora in attesa in ordine di apertura, infine quelle passate.
 
@@ -30,7 +32,7 @@ La lista si riordina da sola: prima le finestre aperte in ordine di chiusura, po
 | `Spawn` | `Time` piu' la durata minima |
 | `Max. Spawn` | `Time` piu' la durata massima, `-` per i timer a durata fissa |
 | `Left` | contatore verso la soglia corrente, negativo quando e' passata |
-| `Status` | `On` finche' non e' respawnato, `Off` dopo |
+| `Status` | `On` fino a `Max. Spawn`, `Off` dopo |
 
 ## Setup
 
