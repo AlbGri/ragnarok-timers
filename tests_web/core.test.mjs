@@ -5,7 +5,7 @@
  */
 
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { afterEach, describe, it } from "node:test";
 
 import {
   COLOR_PALETTE,
@@ -24,12 +24,16 @@ import {
   formatDuration,
   formatLeft,
   formatMinutes,
+  getTimeZone,
   localAt,
+  msFromParts,
   nowLocal,
   parseHHMM,
   parseMinutes,
+  setTimeZone,
   sortEntries,
   toLocalISO,
+  zoneOffsetMinutes,
 } from "../docs/app/core.js";
 
 /** Crea un timer partito un dato numero di minuti fa. */
@@ -143,6 +147,68 @@ describe("orari HH:MM", () => {
     const now = nowLocal();
     const fraUnOra = new Date(now + HOUR);
     assert.ok(localAt(fraUnOra.getHours(), fraUnOra.getMinutes()) > now);
+  });
+});
+
+// ---------------------------------------------------------- fuso orario ----
+
+describe("fuso orario", () => {
+  afterEach(() => setTimeZone(null));
+
+  it("accetta solo fusi riconosciuti", () => {
+    assert.equal(setTimeZone("Europe/Rome"), true);
+    assert.equal(getTimeZone(), "Europe/Rome");
+    assert.equal(setTimeZone("Marte/Olympus"), false);
+    // Un fuso non valido non sostituisce quello buono.
+    assert.equal(getTimeZone(), "Europe/Rome");
+    assert.equal(setTimeZone(null), true);
+    assert.equal(getTimeZone(), null);
+  });
+
+  it("mostra l'orario nel fuso scelto, non in quello del browser", () => {
+    const estate = Date.UTC(2026, 6, 15, 10, 0);
+    setTimeZone("UTC");
+    assert.equal(formatClock(estate), "10:00");
+    setTimeZone("Europe/Rome");
+    assert.equal(formatClock(estate), "12:00");
+    setTimeZone("Asia/Tokyo");
+    assert.equal(formatClock(estate), "19:00");
+  });
+
+  it("segue il cambio dell'ora legale", () => {
+    setTimeZone("Europe/Rome");
+    assert.equal(msFromParts(2026, 7, 15, 12, 0), Date.UTC(2026, 6, 15, 10, 0));
+    assert.equal(msFromParts(2026, 1, 15, 12, 0), Date.UTC(2026, 0, 15, 11, 0));
+    assert.equal(zoneOffsetMinutes(Date.UTC(2026, 6, 15, 10, 0)), 120);
+    assert.equal(zoneOffsetMinutes(Date.UTC(2026, 0, 15, 11, 0)), 60);
+  });
+
+  it("scrive l'offset del fuso scelto nelle date salvate", () => {
+    setTimeZone("Europe/Rome");
+    assert.equal(toLocalISO(Date.UTC(2026, 6, 15, 10, 0)), "2026-07-15T12:00:00+02:00");
+    assert.equal(toLocalISO(Date.UTC(2026, 0, 15, 11, 0)), "2026-01-15T12:00:00+01:00");
+    setTimeZone("UTC");
+    assert.equal(toLocalISO(Date.UTC(2026, 6, 15, 10, 0)), "2026-07-15T10:00:00+00:00");
+  });
+
+  it("rilegge un orario digitato come lo stesso orario", () => {
+    // Il difetto d'origine: con il browser in UTC un orario digitato finiva due
+    // ore avanti, e la rilettura nel fuso sbagliato lo faceva sembrare giusto.
+    for (const zone of ["Europe/Rome", "UTC", "Asia/Manila"]) {
+      setTimeZone(zone);
+      assert.equal(formatClock(localAt(18, 34)), "18:34", zone);
+    }
+  });
+
+  it("colloca l'orario digitato nel fuso scelto", () => {
+    const estate = Date.UTC(2026, 6, 15, 10, 0);
+    setTimeZone("Europe/Rome");
+    const aRoma = msFromParts(2026, 7, 15, 18, 34);
+    setTimeZone("UTC");
+    const aUTC = msFromParts(2026, 7, 15, 18, 34);
+    // Lo stesso orario in due fusi e' lo stesso numero, distanziato dall'offset.
+    assert.equal(aUTC - aRoma, 2 * HOUR);
+    assert.ok(estate > 0);
   });
 });
 

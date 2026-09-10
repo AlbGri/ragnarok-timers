@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.1.0] - 2026-09-10
+
+Versione web installabile, servita da GitHub Pages, accanto all'applicazione
+desktop che resta invariata.
+
+### Versione web
+
+- Applicazione in HTML, CSS e JavaScript senza framework: si apre nel browser e si installa sulla schermata iniziale
+- Layout unico: schede sul telefono, colonne della tabella oltre i 760px
+- Stesso formato dati dell'applicazione desktop, con `Export data` e `Import data` per spostare i timer
+- Timer conservati nel browser, senza account e senza invio di dati
+- Allarmi con suono, notifica di sistema e titolo della scheda lampeggiante
+- Funziona offline e continua a mostrare i timer senza rete
+- Pulsante di installazione che riconosce il sistema e spiega come procedere dove il browser non offre l'installazione automatica
+- Codice di accesso facoltativo, di cui nel sorgente resta la sola impronta SHA-256
+- Pagina di presentazione con collegamento all'ultima release, ricavato dall'API di GitHub
+
+### Fuso orario
+
+- Orologio nell'intestazione con il fuso in uso, per accorgersi subito se non corrisponde al proprio
+- Fuso selezionabile fra le citta' proposte: alcuni browser e VPN dichiarano UTC, e un orario digitato finirebbe spostato di ore senza altri segnali
+- La scelta resta sul dispositivo e non viaggia con i dati esportati
+
+### Note tecniche
+
+- `docs/app/core.js` e' il gemello di `timers_core.py`, con i propri test eseguibili da `node --test`
+- Nessuna dipendenza aggiunta: Node serve solo per i test e per impostare il codice di accesso
+
 ## [1.0.0] - 2026-09-06
 
 Prima versione pubblica, nata da uno script personale riorganizzato in progetto.

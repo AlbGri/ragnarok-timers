@@ -15,7 +15,10 @@
   </head>
   <body>
     <header class="topbar">
-      <h1>Ragnarok Timers</h1>
+      <button id="clock" class="clock" aria-label="Change time zone" title="Change time zone">
+        <span id="clock-time">--:--:--</span>
+        <span id="clock-zone" class="clock-zone"></span>
+      </button>
       <div class="topbar-actions">
         <button id="btn-alerts" class="ghost warn compact" hidden>
           <span class="short">Alerts</span><span class="long">Enable alerts</span>
@@ -106,6 +109,28 @@
         <button type="button" class="ghost" data-action="refresh">Restart from now</button>
         <button type="button" class="ghost danger" data-action="remove">Remove</button>
       </div>
+      <menu>
+        <button type="button" class="ghost" data-close>Close</button>
+      </menu>
+    </dialog>
+
+    <dialog id="timezone" class="sheet">
+      <h2>Time zone</h2>
+      <p class="hint">
+        The times you type are read in this zone. If the clock above does not
+        match the clock on your wall, pick your city here: some browsers and VPNs
+        report the wrong zone, and every timer would be off by the difference.
+      </p>
+
+      <label for="zone-select">City</label>
+      <select id="zone-select"></select>
+
+      <p class="hint" id="zone-detected"></p>
+      <p class="hint">
+        Changing the zone does not move timers created before: check their
+        <strong>Time</strong> and fix the ones that look wrong.
+      </p>
+
       <menu>
         <button type="button" class="ghost" data-close>Close</button>
       </menu>

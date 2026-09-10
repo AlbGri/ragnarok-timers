@@ -99,6 +99,20 @@ Differenze rispetto al desktop, tutte volute:
 | colore di categoria per ordine di apparizione | colore derivato dal nome, uguale su ogni dispositivo |
 | allarme sonoro e lampeggio della barra | suono, notifica di sistema e titolo della scheda lampeggiante |
 
+### Fuso orario
+
+L'intestazione mostra un orologio con il fuso in uso. Non e' un ornamento: la
+modalita' anti tracciamento di Firefox, Tor e alcune VPN dichiarano UTC invece
+del fuso reale, e in quel caso ogni orario digitato viene collocato con ore di
+scarto. Il sintomo non e' evidente, perche' anche la rilettura usa il fuso
+sbagliato e le colonne `Time` e `Spawn` restano coerenti fra loro: se ne accorge
+solo il contatore `Left`.
+
+Toccando l'orologio si sceglie la propria citta'. La scelta e' salvata su quel
+dispositivo e non viaggia con i dati esportati, perche' descrive dove ci si
+trova e non i timer. Cambiare fuso non sposta i timer gia' creati: quelli
+inseriti con il fuso sbagliato vanno corretti a mano.
+
 Il pulsante `Install` in alto compare solo quando l'applicazione non e' gia'
 installata: dove il browser lo permette apre l'installazione automatica, altrove
 mostra le istruzioni del sistema riconosciuto, perche' Safari non emette

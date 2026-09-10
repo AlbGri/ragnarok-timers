@@ -13,14 +13,19 @@ import {
   TimerState,
   TimerStore,
   VERSION,
+  ZONES,
+  browserTimeZone,
   categoryColor,
   formatClock,
+  formatClockSeconds,
   formatLeft,
   formatMinutes,
+  getTimeZone,
   localAt,
   nowLocal,
   parseHHMM,
   parseMinutes,
+  setTimeZone,
   sortEntries,
 } from "./core.js";
 import {
@@ -38,8 +43,10 @@ import {
   importFile,
   isReturningVisitor,
   load,
+  loadTimeZone,
   markVisited,
   save,
+  saveTimeZone,
   storageAvailable,
 } from "./storage.js";
 
@@ -234,6 +241,55 @@ function tick() {
   const now = nowLocal();
   runAlerts(now);
   render(now);
+  $("clock-time").textContent = formatClockSeconds(now);
+}
+
+// ----------------------------------------------------------- fuso orario ---
+
+/** Nome breve del fuso attivo, per l'intestazione. */
+function zoneLabel() {
+  const zone = getTimeZone() ?? browserTimeZone();
+  const known = ZONES.find(([name]) => name === zone);
+  if (known !== undefined) return known[1];
+  // Di un fuso non in elenco resta la parte utile: "America/Bogota" -> "Bogota".
+  return zone.split("/").pop().replace(/_/g, " ");
+}
+
+function refreshZoneLabel() {
+  const auto = getTimeZone() === null;
+  $("clock-zone").textContent = auto ? `${zoneLabel()} (auto)` : zoneLabel();
+}
+
+function setupTimeZone() {
+  const select = $("zone-select");
+  const auto = document.createElement("option");
+  auto.value = "";
+  auto.textContent = `Automatic (${browserTimeZone()})`;
+  select.append(auto);
+  for (const [zone, label] of ZONES) {
+    const option = document.createElement("option");
+    option.value = zone;
+    option.textContent = label;
+    select.append(option);
+  }
+
+  const saved = loadTimeZone();
+  if (saved !== null) setTimeZone(saved);
+  select.value = getTimeZone() ?? "";
+  $("zone-detected").textContent = `Your browser reports ${browserTimeZone()}.`;
+  refreshZoneLabel();
+
+  select.addEventListener("change", () => {
+    const zone = select.value === "" ? null : select.value;
+    if (!setTimeZone(zone)) return;
+    saveTimeZone(zone);
+    refreshZoneLabel();
+    // Gli orari mostrati cambiano tutti insieme: la cache va buttata.
+    for (const row of rows.values()) row.cache = "";
+    tick();
+  });
+
+  $("clock").addEventListener("click", () => $("timezone").showModal());
 }
 
 // ------------------------------------------------------------- form timer ---
@@ -723,6 +779,7 @@ function init() {
   applySettings();
   refreshAlertsButton();
   bindEvents();
+  setupTimeZone();
   setupInstall();
   tick();
   setInterval(tick, TICK_MS);

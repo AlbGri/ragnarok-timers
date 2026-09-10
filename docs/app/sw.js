@@ -6,7 +6,7 @@
  * disallineati fra loro. Va tenuta uguale a `VERSION` di `core.js`.
  */
 
-const VERSION = "1.0.0";
+const VERSION = "1.1.0";
 const CACHE = `ragnarok-timers-${VERSION}`;
 
 const ASSETS = [

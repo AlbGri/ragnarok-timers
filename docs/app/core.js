@@ -9,7 +9,7 @@
  * epoch, le durate `dmin` e `dmax` sono minuti.
  */
 
-export const VERSION = "1.0.0";
+export const VERSION = "1.1.0";
 export const DATA_VERSION = 4;
 
 export const DEFAULT_CATEGORIES = ["MvP", "Quest"];
@@ -43,6 +43,164 @@ export function nowLocal() {
   return Date.now();
 }
 
+// ------------------------------------------------------------ fuso orario ---
+
+/*
+ * Il fuso del browser non e' sempre quello di chi lo usa: la modalita' anti
+ * tracciamento di Firefox, Tor e certe VPN dichiarano UTC. Un orario digitato a
+ * mano finirebbe due ore avanti senza che nulla lo segnali, perche' anche la
+ * rilettura userebbe il fuso sbagliato e le colonne resterebbero coerenti fra
+ * loro. Per questo il fuso e' una scelta esplicita, non un dato dedotto.
+ */
+
+/** @type {?string} Fuso attivo in formato IANA, null per quello del browser. */
+let activeZone = null;
+
+/** Fusi proposti nell'interfaccia, con l'etichetta mostrata. */
+export const ZONES = [
+  ["Europe/Rome", "Rome"],
+  ["Europe/London", "London"],
+  ["Europe/Madrid", "Madrid"],
+  ["Europe/Berlin", "Berlin"],
+  ["Europe/Lisbon", "Lisbon"],
+  ["Europe/Athens", "Athens"],
+  ["Europe/Moscow", "Moscow"],
+  ["Europe/Istanbul", "Istanbul"],
+  ["America/New_York", "New York"],
+  ["America/Sao_Paulo", "Sao Paulo"],
+  ["America/Los_Angeles", "Los Angeles"],
+  ["Asia/Jakarta", "Jakarta"],
+  ["Asia/Bangkok", "Bangkok"],
+  ["Asia/Singapore", "Singapore"],
+  ["Asia/Manila", "Manila"],
+  ["Asia/Seoul", "Seoul"],
+  ["Asia/Tokyo", "Tokyo"],
+  ["Australia/Sydney", "Sydney"],
+  ["UTC", "UTC"],
+];
+
+/**
+ * Imposta il fuso usato per leggere e mostrare gli orari.
+ *
+ * @param {?string} zone Nome IANA, oppure null per seguire il browser.
+ * @returns {boolean} True se il fuso e' stato accettato.
+ */
+export function setTimeZone(zone) {
+  if (zone === null || zone === "") {
+    activeZone = null;
+    return true;
+  }
+  try {
+    new Intl.DateTimeFormat("en-GB", { timeZone: zone });
+  } catch {
+    console.warn("Fuso non riconosciuto:", zone);
+    return false;
+  }
+  activeZone = zone;
+  return true;
+}
+
+/** @returns {?string} Il fuso scelto, null se si segue il browser. */
+export function getTimeZone() {
+  return activeZone;
+}
+
+/** @returns {string} Il fuso che il browser dichiara. */
+export function browserTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
+const formatters = new Map();
+
+function formatterFor(zone) {
+  let formatter = formatters.get(zone);
+  if (formatter === undefined) {
+    formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: zone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    formatters.set(zone, formatter);
+  }
+  return formatter;
+}
+
+/**
+ * Scompone un istante nel fuso attivo.
+ *
+ * @param {number} ms Millisecondi epoch.
+ * @returns {{year: number, month: number, day: number, hour: number,
+ *   minute: number, second: number}}
+ */
+export function partsIn(ms) {
+  if (activeZone === null) {
+    const moment = new Date(ms);
+    return {
+      year: moment.getFullYear(),
+      month: moment.getMonth() + 1,
+      day: moment.getDate(),
+      hour: moment.getHours(),
+      minute: moment.getMinutes(),
+      second: moment.getSeconds(),
+    };
+  }
+  const parts = {};
+  for (const { type, value } of formatterFor(activeZone).formatToParts(new Date(ms))) {
+    if (type !== "literal") parts[type] = Number(value);
+  }
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour: parts.hour,
+    minute: parts.minute,
+    second: parts.second,
+  };
+}
+
+/**
+ * Scostamento del fuso attivo da UTC a un dato istante.
+ *
+ * @param {number} ms Millisecondi epoch.
+ * @returns {number} Minuti, positivi a est di Greenwich.
+ */
+export function zoneOffsetMinutes(ms) {
+  if (activeZone === null) return -new Date(ms).getTimezoneOffset();
+  const { year, month, day, hour, minute, second } = partsIn(ms);
+  const asUTC = Date.UTC(year, month - 1, day, hour, minute, second);
+  return Math.round((asUTC - (ms - (ms % 1000))) / 60000);
+}
+
+/**
+ * Costruisce l'istante corrispondente a una data e a un'ora del fuso attivo.
+ *
+ * @param {number} year Anno.
+ * @param {number} month Mese, da 1 a 12.
+ * @param {number} day Giorno del mese.
+ * @param {number} hour Ora del giorno.
+ * @param {number} minute Minuti.
+ * @returns {number} Millisecondi epoch.
+ */
+export function msFromParts(year, month, day, hour, minute) {
+  if (activeZone === null) {
+    return new Date(year, month - 1, day, hour, minute, 0, 0).getTime();
+  }
+  const naive = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  // Il primo scostamento e' quello di un istante sbagliato di qualche ora: a
+  // cavallo del cambio dell'ora legale la seconda passata lo corregge.
+  const ms = naive - zoneOffsetMinutes(naive) * 60000;
+  return naive - zoneOffsetMinutes(ms) * 60000;
+}
+
 function pad(value, width = 2) {
   return String(Math.floor(Math.abs(value))).padStart(width, "0");
 }
@@ -60,14 +218,14 @@ function pad(value, width = 2) {
  * @returns {string}
  */
 export function toLocalISO(ms, { fractional = true } = {}) {
-  const moment = new Date(ms);
-  const offset = -moment.getTimezoneOffset();
+  const { year, month, day, hour, minute, second } = partsIn(ms);
+  const offset = zoneOffsetMinutes(ms);
   const sign = offset >= 0 ? "+" : "-";
-  const millis = moment.getMilliseconds();
+  const millis = ((ms % 1000) + 1000) % 1000;
   const frac = fractional && millis ? `.${pad(millis, 3)}` : "";
   return (
-    `${pad(moment.getFullYear(), 4)}-${pad(moment.getMonth() + 1)}-${pad(moment.getDate())}` +
-    `T${pad(moment.getHours())}:${pad(moment.getMinutes())}:${pad(moment.getSeconds())}${frac}` +
+    `${pad(year, 4)}-${pad(month)}-${pad(day)}` +
+    `T${pad(hour)}:${pad(minute)}:${pad(second)}${frac}` +
     `${sign}${pad(offset / 60)}:${pad(offset % 60)}`
   );
 }
@@ -109,12 +267,15 @@ export function parseHHMM(text) {
  *   un'uccisione delle 23:50 registrata alle 00:05 partirebbe fra quasi 24 ore.
  */
 export function localAt(hour, minute) {
-  const moment = new Date();
-  moment.setHours(hour, minute, 0, 0);
-  if (moment.getTime() - Date.now() > FUTURE_TOLERANCE) {
-    moment.setDate(moment.getDate() - 1);
-  }
-  return moment.getTime();
+  const now = nowLocal();
+  const today = partsIn(now);
+  const moment = msFromParts(today.year, today.month, today.day, hour, minute);
+  if (moment - now <= FUTURE_TOLERANCE) return moment;
+
+  // Un giorno prima nel fuso attivo, non 24 ore prima: a cavallo del cambio
+  // dell'ora legale i due valori non coincidono.
+  const yesterday = partsIn(moment - 24 * HOUR);
+  return msFromParts(yesterday.year, yesterday.month, yesterday.day, hour, minute);
 }
 
 /**
@@ -177,8 +338,19 @@ export function formatMinutes(minutes) {
  * @returns {string} L'orario nel formato HH:MM.
  */
 export function formatClock(ms) {
-  const moment = new Date(ms);
-  return `${pad(moment.getHours())}:${pad(moment.getMinutes())}`;
+  const { hour, minute } = partsIn(ms);
+  return `${pad(hour)}:${pad(minute)}`;
+}
+
+/**
+ * Orario corrente completo di secondi, per l'orologio dell'intestazione.
+ *
+ * @param {number} ms Millisecondi epoch.
+ * @returns {string} L'orario nel formato HH:MM:SS.
+ */
+export function formatClockSeconds(ms) {
+  const { hour, minute, second } = partsIn(ms);
+  return `${pad(hour)}:${pad(minute)}:${pad(second)}`;
 }
 
 // Oltre questa anzianita' il contatore smette di essere informativo:

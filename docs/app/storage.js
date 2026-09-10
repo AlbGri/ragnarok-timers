@@ -11,6 +11,7 @@ import { TimerStore } from "./core.js";
 const DATA_KEY = "ragnarok-timers/data";
 const BACKUP_KEY = "ragnarok-timers/data.bak";
 const SEEN_KEY = "ragnarok-timers/seen";
+const ZONE_KEY = "ragnarok-timers/timezone";
 
 /**
  * Verifica che localStorage sia utilizzabile.
@@ -96,6 +97,37 @@ export function markVisited() {
     localStorage.setItem(SEEN_KEY, new Date().toISOString());
   } catch {
     // Senza localStorage si perde solo il messaggio di benvenuto.
+  }
+}
+
+/**
+ * Fuso scelto su questo dispositivo.
+ *
+ * Sta fuori dal file dei timer di proposito: e' una caratteristica di dove ci
+ * si trova, non dei dati. Importando i propri timer da un altro paese il fuso
+ * giusto resta quello del dispositivo che li apre.
+ *
+ * @returns {?string} Il nome IANA salvato, null se si segue il browser.
+ */
+export function loadTimeZone() {
+  try {
+    return localStorage.getItem(ZONE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Salva il fuso scelto.
+ *
+ * @param {?string} zone Nome IANA, null per tornare a seguire il browser.
+ */
+export function saveTimeZone(zone) {
+  try {
+    if (zone === null) localStorage.removeItem(ZONE_KEY);
+    else localStorage.setItem(ZONE_KEY, zone);
+  } catch {
+    // Senza localStorage la scelta vale per la sola sessione.
   }
 }
 
