@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ragnarok Timers</title>
+    <meta
+      name="description"
+      content="Respawn window timers for Ragnarok Online MvPs and quests, in the browser or as a Windows app."
+    />
+    <meta name="theme-color" content="#1e1e1e" />
+    <link rel="icon" href="app/icons/icon-192.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <header class="hero">
+        <img src="app/icons/icon-192.png" alt="" width="72" height="72" />
+        <h1>Ragnarok Timers</h1>
+        <p class="lead">
+          Track respawn windows for MvPs and quests. Write down the kill time and
+          the window, and the row turns yellow when the spawn opens.
+        </p>
+        <div class="cta">
+          <a class="button primary" href="app/">Open the web app</a>
+          <a class="button" id="download" href="https://github.com/AlbGri/ragnarok-timers/releases/latest">
+            Download for Windows
+          </a>
+        </div>
+        <p class="note" id="release-note">Runs in the browser. Timers stay on your device.</p>
+      </header>
+
+      <section>
+        <h2>How the window works</h2>
+        <p>
+          A kill at 13:12 with a declared respawn of 180–190 minutes becomes
+          <strong>Spawn 16:12</strong> and <strong>Max. Spawn 16:22</strong>. The
+          row follows the window:
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Phase</th>
+              <th>Row</th>
+              <th>Left counts</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Before Spawn</td>
+              <td><span class="swatch pending"></span> category colour</td>
+              <td>down to Spawn</td>
+            </tr>
+            <tr>
+              <td>Inside the window</td>
+              <td><span class="swatch open"></span> yellow, it may be up</td>
+              <td>down to Max. Spawn</td>
+            </tr>
+            <tr>
+              <td>After Max. Spawn</td>
+              <td><span class="swatch closed"></span> red, missed</td>
+              <td>up, then stops</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Leave <strong>Max</strong> empty and the timer becomes a plain
+          countdown. Nothing disappears on its own: timers stay until you remove
+          them.
+        </p>
+      </section>
+
+      <section>
+        <h2>Web app or desktop app</h2>
+        <div class="cards">
+          <article>
+            <h3>In the browser</h3>
+            <p>
+              Works on the phone too, and can be installed to the home screen for
+              offline use. Timers are stored in that browser only — nothing is
+              uploaded, and clearing site data deletes them. Alarms ring only
+              while the page is open.
+            </p>
+          </article>
+          <article>
+            <h3>On Windows</h3>
+            <p>
+              A single folder, no installer, no dependencies. Alarms keep ringing
+              in the background and the taskbar icon flashes. Timers live in a
+              JSON file next to the executable.
+            </p>
+          </article>
+        </div>
+        <p class="note">
+          Both use the same file format: export from one, import into the other.
+        </p>
+      </section>
+
+      <footer>
+        <a href="https://github.com/AlbGri/ragnarok-timers">Source on GitHub</a>
+        <span>·</span>
+        <span>MIT licence</span>
+      </footer>
+    </main>
+
+    <script type="module">
+      // La pagina si tiene aggiornata da sola: il nome dell'asset cambia a ogni
+      // versione, quindi il collegamento diretto va ricavato dall'ultima release.
+      const REPO = "AlbGri/ragnarok-timers";
+
+      try {
+        const response = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`);
+        if (!response.ok) throw new Error(response.status);
+        const release = await response.json();
+        const asset = release.assets?.find((item) => item.name.endsWith(".zip"));
+        if (asset !== undefined) {
+          const link = document.getElementById("download");
+          link.href = asset.browser_download_url;
+          link.textContent = `Download for Windows (${release.tag_name})`;
+          const size = (asset.size / 1024 / 1024).toFixed(1);
+          const date = new Date(release.published_at).toLocaleDateString();
+          document.getElementById("release-note").textContent =
+            `Windows build: ${size} MB, published ${date}.`;
+        }
+      } catch (error) {
+        // Senza rete o oltre il limite di richieste resta il collegamento alla
+        // pagina delle release, che funziona comunque.
+        console.warn("Release non letta:", error);
+      }
+    </script>
+  </body>
+</html>

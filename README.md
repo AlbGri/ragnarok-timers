@@ -4,6 +4,8 @@ Timer per le finestre di respawn di MvP e quest di Ragnarok Online.
 
 Applicazione desktop in tkinter, senza dipendenze esterne: registri l'ora dell'uccisione e la finestra di respawn del mostro, e la riga cambia colore quando la finestra si apre. Un allarme sonoro ripetuto e il lampeggio nella barra delle applicazioni avvisano anche se stai facendo altro.
 
+Esiste anche una [versione web](#versione-web) installabile come applicazione, pensata per il telefono, che tiene i dati nel browser e scambia file con quella desktop.
+
 L'interfaccia e' in inglese; commenti, docstring e documentazione sono in italiano.
 
 ## Finestre di respawn
@@ -73,6 +75,65 @@ Tutto sta in `ragnarok_timers.json`, accanto allo script o all'eseguibile: timer
 
 Il salvataggio e' atomico e mantiene una copia `.bak`: se il file principale risulta illeggibile, all'avvio i dati vengono recuperati dal backup. Gli errori finiscono in `ragnarok_timers.log`.
 
+## Versione web
+
+La cartella `docs/` contiene una pagina di presentazione e l'applicazione in
+HTML, CSS e JavaScript, senza framework ne' passaggi di build. E' una PWA:
+installabile sulla schermata iniziale e utilizzabile offline.
+
+I dati stanno in `localStorage`, quindi restano nel browser che li ha scritti:
+non c'e' sincronizzazione fra dispositivi e cancellare i dati del sito cancella
+i timer. Il formato e' pero' identico a quello dell'applicazione desktop, e i
+comandi `Export data` e `Import data` spostano i timer da una all'altra.
+
+Il layout e' unico: su telefono ogni timer e' una scheda, da 760px in su le
+stesse celle diventano le colonne della tabella.
+
+Differenze rispetto al desktop, tutte volute:
+
+| Desktop | Web |
+|---|---|
+| doppio clic su una cella per modificarla | un form unico, dal doppio clic o dal menu `⋮` |
+| conferma prima di rimuovere | rimozione immediata con `Undo` nel messaggio |
+| `Ctrl+D`, `Ctrl+R` | `d`, `r`, piu' `n` per un timer nuovo. Nel browser quelle combinazioni sono gia' occupate |
+| colore di categoria per ordine di apparizione | colore derivato dal nome, uguale su ogni dispositivo |
+| allarme sonoro e lampeggio della barra | suono, notifica di sistema e titolo della scheda lampeggiante |
+
+Il pulsante `Install` in alto compare solo quando l'applicazione non e' gia'
+installata: dove il browser lo permette apre l'installazione automatica, altrove
+mostra le istruzioni del sistema riconosciuto, perche' Safari non emette
+`beforeinstallprompt` e la voce resta nascosta nel menu di condivisione.
+
+Limiti del browser, da conoscere prima di affidarcisi:
+
+- **gli allarmi suonano solo con la pagina aperta**: una PWA chiusa non puo'
+  svegliarsi da sola senza un server che invii notifiche push
+- il suono parte solo dopo la prima interazione con la pagina, da cui il
+  pulsante `Enable alerts`
+- su iPhone le notifiche funzionano solo se l'applicazione e' stata installata
+  sulla schermata iniziale
+
+### Codice di accesso
+
+`docs/app/gate.js` contiene l'impronta SHA-256 di un codice, mai il codice:
+
+```bash
+node tools/set-access-code.mjs "codice scelto"
+node tools/set-access-code.mjs --clear     # toglie il codice
+```
+
+Non e' una protezione. Il sito e' statico e il repository e' pubblico: un
+codice corto si trova per tentativi e chi lo conosce puo' passarlo a chiunque.
+Serve a tenere fuori i curiosi di passaggio. I dati restano comunque sul
+dispositivo di ciascuno, quindi non c'e' nulla di condiviso da proteggere.
+
+### Pubblicazione
+
+Su GitHub, `Settings > Pages > Deploy from a branch`, ramo `main`, cartella
+`/docs`. La pagina di presentazione ricava da sola il collegamento all'ultima
+release chiamando l'API di GitHub, quindi pubblicando una versione nuova non va
+aggiornata a mano.
+
 ## Struttura
 
 | File | Descrizione |
@@ -80,6 +141,15 @@ Il salvataggio e' atomico e mantiene una copia `.bak`: se il file principale ris
 | `ragnarok_timers.py` | interfaccia tkinter: finestra, tabella, editing inline, entry point |
 | `timers_core.py` | modello dati, persistenza, audio, parsing. Nessun import di tkinter |
 | `tests/test_core.py` | test pytest della logica non grafica |
+| `docs/index.html` | pagina di presentazione con i collegamenti all'app e alla release |
+| `docs/app/core.js` | gemello JavaScript di `timers_core.py`. Non tocca il DOM |
+| `docs/app/app.js` | interfaccia web: lista, form, comandi, allarmi |
+| `docs/app/storage.js` | persistenza su `localStorage`, esportazione e importazione |
+| `docs/app/alerts.js` | suono, notifiche, titolo lampeggiante, wake lock |
+| `docs/app/gate.js` | schermata del codice di accesso |
+| `docs/app/sw.js` | service worker: uso offline e installazione |
+| `tests_web/core.test.mjs` | test della logica web |
+| `tools/set-access-code.mjs` | imposta l'impronta del codice di accesso |
 | `ragnarok_timers.json` | dati e impostazioni (generato automaticamente) |
 
 ## Test
@@ -89,6 +159,25 @@ conda activate ragnarok-timers
 pip install -r requirements-dev.txt
 pytest
 ```
+
+La logica della versione web ha i suoi test, che girano con il solo Node
+installato:
+
+```bash
+node --test tests_web/*.mjs
+```
+
+Per provare le pagine serve un server locale, perche' i moduli JavaScript e il
+service worker non funzionano aprendo il file dal disco:
+
+```bash
+cd docs
+python -m http.server 8765
+```
+
+L'applicazione e' su `http://localhost:8765/app/`. Service worker e
+installazione richiedono `localhost` oppure HTTPS: dall'indirizzo di rete
+locale in HTTP semplice la pagina si apre ma non si installa.
 
 ## Build eseguibile
 
